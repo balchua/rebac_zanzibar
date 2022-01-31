@@ -31,48 +31,36 @@ func main() {
 
 	ctx := context.Background()
 
-	log.Printf("Permission to create %t", checkPortfolioPermission(ctx, client, "topdawg", "shell", "create"))
-	log.Printf("Permission to create %t", checkPortfolioPermission(ctx, client, "topdawg", "sgx", "create"))
-	log.Printf("Permission to create %t", checkPortfolioPermission(ctx, client, "madame_oracle", "sgx", "create"))
-	log.Printf("Permission to create %t", checkPortfolioPermission(ctx, client, "minime", "sgx", "create"))
-	log.Printf("Permission to create %t", checkPortfolioPermission(ctx, client, "minime", "sgx", "read"))
-	log.Printf("Permission to create %t", checkPortfolioPermission(ctx, client, "minime", "shell", "read"))
-	log.Printf("Permission to create %t", checkDocumentPermission(ctx, client, "minime", "findoc", "read"))
+	checkPortfolioPermission(ctx, client, "topdawg", "shell", "create")
+	checkPortfolioPermission(ctx, client, "topdawg", "sgx", "create")
+	checkPortfolioPermission(ctx, client, "madame_oracle", "sgx", "create")
+	checkPortfolioPermission(ctx, client, "minime", "sgx", "create")
+	checkPortfolioPermission(ctx, client, "minime", "sgx", "read")
+	checkPortfolioPermission(ctx, client, "minime", "shell", "read")
+	checkDocumentPermission(ctx, client, "minime", "findoc", "read")
+	checkDocumentPermission(ctx, client, "minime", "findoc", "update")
 
 	// resp.Permissionship == pb.CheckPermissionResponse_PERMISSIONSHIP_NO_PERMISSION
 }
 
-func checkPortfolioPermission(ctx context.Context, client *authzed.Client, userId string, portfolioId string, action string) bool {
-	user := &pb.SubjectReference{Object: &pb.ObjectReference{
-		ObjectType: "user",
-		ObjectId:   userId,
-	}}
-
-	portfolio := &pb.ObjectReference{
-		ObjectType: "portfolio",
-		ObjectId:   portfolioId,
-	}
-
-	resp, err := client.CheckPermission(ctx, &pb.CheckPermissionRequest{
-		Resource:   portfolio,
-		Permission: action,
-		Subject:    user,
-	})
-	if err != nil {
-		log.Fatalf("failed to check permission: %s", err)
-	}
-
-	return resp.Permissionship == pb.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION
+func checkPortfolioPermission(ctx context.Context, client *authzed.Client, userId string, portfolioId string, action string) {
+	permission := checkUserPermission(ctx, client, "portfolio", userId, portfolioId, action)
+	log.Printf("%s permission is %t for user %s on portfolio %s", action, permission, userId, portfolioId)
 }
 
-func checkDocumentPermission(ctx context.Context, client *authzed.Client, userId string, portfolioId string, action string) bool {
+func checkDocumentPermission(ctx context.Context, client *authzed.Client, userId string, documentId string, action string) {
+	permission := checkUserPermission(ctx, client, "document", userId, documentId, action)
+	log.Printf("%s permission is %t for user %s on document %s", action, permission, userId, documentId)
+}
+
+func checkUserPermission(ctx context.Context, client *authzed.Client, resourceType string, userId string, portfolioId string, action string) bool {
 	user := &pb.SubjectReference{Object: &pb.ObjectReference{
 		ObjectType: "user",
 		ObjectId:   userId,
 	}}
 
 	portfolio := &pb.ObjectReference{
-		ObjectType: "document",
+		ObjectType: resourceType,
 		ObjectId:   portfolioId,
 	}
 

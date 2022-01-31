@@ -292,3 +292,16 @@ zed --insecure --endpoint=localhost:50051 --token=supersecretthingy permission c
 This returns `false`
 
 To see the go code client in action to verify for permissions check out the [main.go](main.go)
+
+```shell
+go run main.go
+
+2022/01/31 13:35:52 create permission is true for user topdawg on portfolio shell
+2022/01/31 13:35:52 create permission is false for user topdawg on portfolio sgx
+2022/01/31 13:35:52 create permission is true for user madame_oracle on portfolio sgx
+2022/01/31 13:35:52 create permission is false for user minime on portfolio sgx
+2022/01/31 13:35:52 read permission is true for user minime on portfolio sgx
+2022/01/31 13:35:52 read permission is false for user minime on portfolio shell
+2022/01/31 13:35:52 read permission is true for user minime on document findoc
+2022/01/31 13:35:52 update permission is false for user minime on document findoc
+```
