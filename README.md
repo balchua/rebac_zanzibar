@@ -258,10 +258,34 @@ Click Run
 
 # Run the spicedb server
 
+## Install PostgresDB.
+
+If you are running on kubernetes, the sample manifest files are located [here](manifest/postgres/postgres.yaml)
+
+* Create a new `postgres` namespace.  
+
+```shell
+kubectl create ns postgres
+```
+
+* Apply the manifest
+
+```shell
+kubectl -n postgres apply -f postgres.yaml
+```
+
+
 Follow docs from [here](https://github.com/authzed/spicedb#installing-spicedb)
 
 ```shell
-spicedb serve --grpc-preshared-key "supersecretthingy"
+spicedb serve --datastore-engine postgres --datastore-conn-uri="postgres://amazinguser:perfectpassword@localhost:31747/awesomedb?sslmode=disable" --grpc-preshared-key "supersecretthingy"
+```
+
+Or with Postgres
+
+```shell
+
+spicedb migrate head --datastore-engine postgres --datastore-conn-uri="postgres://amazinguser:perfectpassword@localhost:31747/awesomedb?sslmode=disable"
 ```
 
 ## Download zed tool
@@ -276,6 +300,30 @@ zed import --insecure --endpoint=localhost:50051 --token=supersecretthingy --rel
 
 ```
 zed import --insecure --endpoint=localhost:50051 --token=supersecretthingy --schema=false file:///home/thor/workspace/rebac-samples/files/relationships.yaml
+```
+
+### Get relationships
+
+#### To get all relationships related to `portfolio:sgx`
+
+```shell
+zed relationship  read --insecure --endpoint=localhost:50051 --token=supersecretthingy portfolio:sgx
+
+portfolio:sgx associate_agent user:minime
+portfolio:sgx industry industry:financial
+portfolio:sgx portfolio_manager user:james
+```
+
+#### To get all relationships related to `portfolio`
+
+```shell
+zed relationship  read --insecure --endpoint=localhost:50051 --token=supersecretthingy portfolio
+
+portfolio:sgx associate_agent user:minime
+portfolio:sgx industry industry:financial
+portfolio:sgx portfolio_manager user:james
+portfolio:shell industry industry:oil_and_gas
+portfolio:shell portfolio_manager user:agentsmith
 ```
 
 ### Check permission

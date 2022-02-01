@@ -1,36 +1,34 @@
 schema: >-
-  definition user {}
+    definition user {}
 
+    definition industry {
+        relation relationship_manager: user
+    }
+    /**
+    * portfolio is an example resource.
+    */
+    definition portfolio {
+        relation portfolio_manager: user
+        relation senior_agent: user
+        relation associate_agent: user
 
-  definition industry {
-      relation relationship_manager: user
-  }
+        relation industry: industry
 
-  /**
-   * portfolio is an example resource.
-   */
-  definition portfolio {
-      relation portfolio_manager: user
-      relation senior_agent: user
-      relation associate_agent: user
+        permission create = portfolio_manager + industry->relationship_manager
+        permission update = create + senior_agent
+        
+        permission read = create + associate_agent
+    }
 
-      relation industry: industry
+    /**
+    * document is a sub resource of portfolio
+    */
 
-      permission update = portfolio_manager + industry->relationship_manager + senior_agent
-      permission create = portfolio_manager + industry->relationship_manager
-      permission read = portfolio_manager + associate_agent + industry->relationship_manager
-  }
+    definition document {
+        relation parent: portfolio
 
+        permission create = parent->create
+        permission update = parent->update
+        permission read = parent->update + parent->read + parent->create
 
-  /**
-   * document is a sub resource of portfolio
-   */
-
-  definition document {
-      relation parent: portfolio
-
-      permission create = parent->create
-      permission update = parent->update
-      permission read = parent->update + parent->read + parent->create
-
-  }
+    }
