@@ -8,6 +8,15 @@ SpiceDB is Authzed Open source implementation of Zanzibar.
 
 The following instructions uses [Authzed playground](https://play.authzed.com/schema)
 
+## Pre-requisites
+
+* MicroK8s
+* PostgreSQL
+* SpiceDB
+* zed CLI
+
+Follow the [getting started section](docs/getting_started.md#getting_started.md)
+
 ## Application Context
 
 The application is a simple CRUD based application allowing users to `CREATE`, `UPDATE`, `DELETE` and `READ` Deals.
@@ -65,6 +74,12 @@ definition deal {
 }
 
 ```
+
+Loading the schema using the `zed` tool.
+
+``` shell
+zed --insecure --log-level=trace schema write hack/schema.zed
+```
 ## Sample Groups and Users
 
 There are 2 groups:
@@ -100,107 +115,23 @@ zed --insecure --log-level=trace relationship delete group:singapore middle_offi
 zed --insecure --log-level=trace relationship delete group:singapore back_office_manager user:logan
 ```
 
-
-# Run the spicedb server
-
-## Install PostgresDB.
-
-If you are running on kubernetes, the sample manifest files are located [here](manifest/postgres/postgres.yaml)
-
-* Create a new `postgres` namespace.  
-
-```shell
-kubectl create ns postgres
-```
-
-* Apply the manifest
-
-```shell
-kubectl -n postgres apply -f postgres.yaml
-```
-
-
-Follow docs from [here](https://github.com/authzed/spicedb#installing-spicedb)
-
-```shell
-spicedb serve --datastore-engine postgres --datastore-conn-uri="postgres://amazinguser:perfectpassword@localhost:31747/awesomedb?sslmode=disable" --grpc-preshared-key "supersecretthingy"
-```
-
-Run spiceDB schema migration with PostgreSQL.
-
-```shell
-
-spicedb migrate head --datastore-engine postgres --datastore-conn-uri="postgres://amazinguser:perfectpassword@localhost:31747/awesomedb?sslmode=disable"
-```
-
-## Download zed tool
-
-### Import the schema yamls
-
-```
-zed import --insecure --endpoint=localhost:50051 --token=supersecretthingy --relationships=false file:///home/thor/workspace/rebac-samples/files/schema.yaml
-```
-
-### Import the relationships
-
-```
-zed import --insecure --endpoint=localhost:50051 --token=supersecretthingy --schema=false file:///home/thor/workspace/rebac-samples/files/relationships.yaml
-```
-
-### Write schema
+## Building the application
 
 ``` shell
-zed --insecure --log-level=trace schema write hack/schema.zed
+go build .
 ```
 
-### Get relationships
+## Running the application
 
-#### To get all relationships related to `portfolio:sgx`
-
-```shell
-zed relationship  read --insecure --endpoint=localhost:50051 --token=supersecretthingy portfolio:sgx
-
-portfolio:sgx associate_agent user:minime
-portfolio:sgx industry industry:financial
-portfolio:sgx portfolio_manager user:james
+``` shell
+./demo-spicedb serve
 ```
 
-#### To get all relationships related to `portfolio`
+The application will use the port `8181`.
 
-```shell
-zed relationship  read --insecure --endpoint=localhost:50051 --token=supersecretthingy portfolio
+Supported endpoints:
 
-portfolio:sgx associate_agent user:minime
-portfolio:sgx industry industry:financial
-portfolio:sgx portfolio_manager user:james
-portfolio:shell industry industry:oil_and_gas
-portfolio:shell portfolio_manager user:agentsmith
-```
-
-### Check permission
-
-```
-zed --insecure --endpoint=localhost:50051 --token=supersecretthingy permission check "portfolio:shell" "update" "user:topdawg"
-```
-This returns `true`
-
-```
-zed --insecure --endpoint=localhost:50051 --token=supersecretthingy permission check "portfolio:sgx" "update" "user:topdawg"
-```
-
-This returns `false`
-
-To see the go code client in action to verify for permissions check out the [main.go](main.go)
-
-```shell
-go run main.go
-
-2022/01/31 13:35:52 create permission is true for user topdawg on portfolio shell
-2022/01/31 13:35:52 create permission is false for user topdawg on portfolio sgx
-2022/01/31 13:35:52 create permission is true for user madame_oracle on portfolio sgx
-2022/01/31 13:35:52 create permission is false for user minime on portfolio sgx
-2022/01/31 13:35:52 read permission is true for user minime on portfolio sgx
-2022/01/31 13:35:52 read permission is false for user minime on portfolio shell
-2022/01/31 13:35:52 read permission is true for user minime on document findoc
-2022/01/31 13:35:52 update permission is false for user minime on document findoc
-```
+| METHOD | URI | COMMENTS |
+|--------|-----|----------|
+| `GET` | `/api/v1/deal/:id` | Gets a deal |
+| `POST` | `/api/v1/deal` | Create a new deal |

@@ -8,6 +8,7 @@ import (
 
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
+
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
 	"go.uber.org/zap"
@@ -110,6 +111,40 @@ func (d *DealPermissionServiceImpl) checkPermission(ctx context.Context, resourc
 		return false, err
 	}
 	return resp.Permissionship == pb.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION, nil
+}
+
+func (d *DealPermissionServiceImpl) WriteDealRelationship(ctx context.Context, dealId string, subjectId string, subjectRel string) error {
+
+	request := &pb.WriteRelationshipsRequest{
+		Updates: []*pb.RelationshipUpdate{
+			{
+				Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+				Relationship: &pb.Relationship{
+					Resource: &pb.ObjectReference{
+						ObjectType: "deal",
+						ObjectId:   dealId,
+					},
+					Relation: "group",
+					Subject: &pb.SubjectReference{
+						Object: &pb.ObjectReference{
+							ObjectType: "group",
+							ObjectId:   subjectId,
+						},
+						OptionalRelation: subjectRel,
+					},
+				},
+			},
+		},
+		OptionalPreconditions: nil,
+	}
+
+	response, err := d.client.WriteRelationships(ctx, request)
+	if err != nil {
+		return err
+	}
+
+	zap.S().Infof("Token : %s", response.WrittenAt.Token)
+	return nil
 }
 
 func (d *DealPermissionServiceImpl) readRelationship(ctx context.Context, object string) {

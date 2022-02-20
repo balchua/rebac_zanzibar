@@ -27,17 +27,18 @@ func (d *DealServiceImpl) GetAll(ctx context.Context) ([]DealInfo, error) {
 func (d *DealServiceImpl) Get(ctx context.Context, dealId string) (DealInfo, error) {
 
 	var dealInfo DealInfo
-	dealInfo = DealInfo{
-		DealId:     dealId,
-		ClientName: "ClientA",
-		ClientId:   "12345",
-		ContractId: "ABCDEFG",
-		Date:       time.Now(),
-	}
+
 	userId := ctx.Value("user")
 	coreView := d.permissionService.CanView(ctx, dealId, userId.(string))
 	zap.S().Infof("Can user %s view deal %s ==> %t", userId.(string), dealId, coreView)
 	if coreView == true {
+		dealInfo = DealInfo{
+			DealId:     dealId,
+			ClientName: "ClientA",
+			ClientId:   "12345",
+			ContractId: "ABCDEFG",
+			Date:       time.Now(),
+		}
 		supplResp := d.permissionService.CanViewSupplementaryInfo(ctx, dealId, userId.(string))
 		zap.S().Infof("Can user %s view supplementary info %s ==> %t", userId.(string), dealId, supplResp)
 		if supplResp == true {
@@ -70,6 +71,12 @@ func (d *DealServiceImpl) CreateDeal(ctx context.Context, dealInfo DealInfo) (De
 	resp := d.permissionService.CanCreateDeal(ctx, dealInfo.Origin, userId.(string))
 
 	if resp == true {
+
+		err := d.permissionService.WriteDealRelationship(ctx, dealInfo.DealId, dealInfo.Origin, "")
+		if err != nil {
+			return DealInfo{}, err
+		}
+
 		return DealInfo{
 			DealId:     "99",
 			ClientName: "ClientA",

@@ -8,4 +8,5 @@ type DealPermissionService interface {
 	CanViewSupplementaryInfo(ctx context.Context, dealId string, userId string) bool
 	CanViewServicingInfo(ctx context.Context, dealId string, userId string) bool
 	CanUpdateCoreInformation(ctx context.Context, dealId string, userId string) bool
+	WriteDealRelationship(ctx context.Context, dealId string, subjectId string, subjectRel string) error
 }

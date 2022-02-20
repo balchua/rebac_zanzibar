@@ -195,3 +195,55 @@ In the Assertions tab add this to the `assertFalse`
 ```
 
 Click Run
+
+### Get relationships
+
+#### To get all relationships related to `portfolio:sgx`
+
+```shell
+zed relationship  read --insecure --endpoint=localhost:50051 --token=supersecretthingy portfolio:sgx
+
+portfolio:sgx associate_agent user:minime
+portfolio:sgx industry industry:financial
+portfolio:sgx portfolio_manager user:james
+```
+
+#### To get all relationships related to `portfolio`
+
+```shell
+zed relationship  read --insecure --endpoint=localhost:50051 --token=supersecretthingy portfolio
+
+portfolio:sgx associate_agent user:minime
+portfolio:sgx industry industry:financial
+portfolio:sgx portfolio_manager user:james
+portfolio:shell industry industry:oil_and_gas
+portfolio:shell portfolio_manager user:agentsmith
+```
+
+### Check permission
+
+```
+zed --insecure --endpoint=localhost:50051 --token=supersecretthingy permission check "portfolio:shell" "update" "user:topdawg"
+```
+This returns `true`
+
+```
+zed --insecure --endpoint=localhost:50051 --token=supersecretthingy permission check "portfolio:sgx" "update" "user:topdawg"
+```
+
+This returns `false`
+
+To see the go code client in action to verify for permissions check out the [main.go](main.go)
+
+```shell
+go run main.go
+
+2022/01/31 13:35:52 create permission is true for user topdawg on portfolio shell
+2022/01/31 13:35:52 create permission is false for user topdawg on portfolio sgx
+2022/01/31 13:35:52 create permission is true for user madame_oracle on portfolio sgx
+2022/01/31 13:35:52 create permission is false for user minime on portfolio sgx
+2022/01/31 13:35:52 read permission is true for user minime on portfolio sgx
+2022/01/31 13:35:52 read permission is false for user minime on portfolio shell
+2022/01/31 13:35:52 read permission is true for user minime on document findoc
+2022/01/31 13:35:52 update permission is false for user minime on document findoc
+```
