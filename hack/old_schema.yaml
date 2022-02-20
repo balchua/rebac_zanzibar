@@ -1,0 +1,63 @@
+schema: >-
+    definition user {}
+
+    definition industry {
+        relation relationship_manager: user
+    }
+    /**
+    * portfolio is an example resource.
+    */
+    definition portfolio {
+        relation portfolio_manager: user
+        relation senior_agent: user
+        relation associate_agent: user
+
+        relation industry: industry
+
+        permission create = portfolio_manager + industry->relationship_manager
+        permission update = create + senior_agent
+        
+        permission read = create + associate_agent
+    }
+
+    /**
+    * document is a sub resource of portfolio
+    */
+
+    definition document {
+        relation parent: portfolio
+
+        permission create = parent->create
+        permission update = parent->update
+        permission read = parent->update + parent->read + parent->create
+
+    }
+
+    definition group {
+        relation front_office_manager: user
+        relation front_office_member: user
+        relation middle_office_manager: user
+        relation middle_office_member: user
+        relation back_office_manager: user
+        relation back_office_member: user
+
+    }
+
+
+    definition deal_state {
+        relation viewer: user
+        relation approver: user
+
+        permission view = viewer  + approver
+        permission update = approver
+    }
+
+
+    definition deal {
+        relation group: group
+        relation state: deal_state
+        
+        permission update_core_section =  state->update & group->front_office_manager
+        permission update_supplementary_section = state->update & group->middle_office_manager
+        permission read = group->front_office_member + group->middle_office_member + group->back_office_member + update_core_section + update_supplementary_section + state->viewer
+    }

@@ -1,0 +1,102 @@
+schema: >-
+  definition user {}
+
+
+  definition group {
+      relation front_office_manager: user
+      relation front_office_member: user
+      relation middle_office_manager: user
+      relation middle_office_member: user
+      relation back_office_manager: user
+      relation back_office_member: user
+
+  }
+
+
+  definition deal_state {
+      relation viewer: user
+      relation approver: user
+
+      permission view = viewer  + approver
+      permission update = approver
+  }
+
+
+  definition deal {
+      relation group: group
+      relation state: deal_state
+      
+      permission update_core_section =  state->update & group->front_office_manager
+      permission update_supplementary_section = state->update & group->middle_office_manager
+      permission read = group->front_office_member + group->middle_office_member + group->back_office_member + update_core_section + update_supplementary_section + state->viewer
+  }
+
+
+  /*
+
+  definition documentstate {
+      relation viewer: user
+
+      permission view = viewer
+  }
+
+
+  definition document {
+      relation state: documentstate
+
+      permission view = state->view
+  }
+
+  */
+relationships: >-
+  //documentstate:firstdoc_validated#viewer@user:firstuser
+
+  //documentstate:firstdoc_acquired#viewer@user:seconduser
+
+  //document:firstdoc#state@documentstate:firstdoc_validated
+
+  //document:firstdoc#state@documentstate:firstdoc_acquired
+
+  group:singapore#front_office_manager@user:james#...
+
+  group:singapore#front_office_manager@user:john#...
+
+  group:singapore#front_office_member@user:jane#...
+
+  group:singapore#middle_office_manager@user:fred#...
+
+
+  group:france#front_office_manager@user:ludovic#...
+
+  group:france#front_office_manager@user:philippe#...
+
+  group:france#front_office_member@user:jean#...
+
+  group:france#middle_office_manager@user:christophe#...
+
+
+  deal:1#group@group:singapore#...
+
+  deal_state:initiated#approver@user:john#...
+
+  deal_state:initiated#approver@user:jane#...
+
+  deal:1#state@deal_state:initiated#...
+
+  deal_state:review#approver@user:fred#...
+
+
+  deal:8956#group@group:france#...
+assertions:
+  assertTrue:
+    - deal:1#update_core_section@user:james
+    - deal:8956#read@user:christophe
+  assertFalse:
+    - deal:1#update_core_section@user:fred
+    - deal:1#read@user:philippe
+validation:
+  deal:1#read:
+    - "[user:jane] is <group:singapore#front_office_member>"
+    - "[user:john] is <deal_state:initiated#approver>/<group:singapore#front_office_manager>"
+  deal:1#update_core_section:
+    - "[user:john] is <deal_state:initiated#approver>/<group:singapore#front_office_manager>"

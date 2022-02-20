@@ -1,0 +1,25 @@
+definition user {}
+
+
+
+definition group {
+    relation front_office_manager: user
+    relation front_office_member: user
+    relation middle_office_manager: user
+    relation middle_office_member: user
+    relation back_office_manager: user
+    relation back_office_member: user
+
+    permission can_create_deal = front_office_manager
+}
+
+definition deal {
+    relation group: group
+    
+    permission update_core_section =  group->front_office_manager
+    permission update_supplementary_section =  group->middle_office_manager
+    permission update_servicing_section = group->back_office_manager
+    permission read_core_section = group->front_office_member + group->middle_office_member + group->back_office_member + update_core_section + update_supplementary_section + update_servicing_section
+    permission read_supplementary_section = group->middle_office_manager + group->middle_office_member
+    permission read_servicing_section = group->back_office_manager + group->back_office_member
+}
