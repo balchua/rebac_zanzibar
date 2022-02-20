@@ -32,7 +32,7 @@ func (d *DealRoutes) GetDeal(c echo.Context) error {
 	ctx := c.Request().Context()
 	dealId := c.Param("id")
 	userId := c.Request().Header.Get("user")
-	zap.S().Info("retrieving a deal %s", dealId)
+	zap.S().Infof("retrieving a deal %s", dealId)
 	dealCtx := context.WithValue(ctx, "user", userId)
 	deal, err := d.dealService.Get(dealCtx, dealId)
 
