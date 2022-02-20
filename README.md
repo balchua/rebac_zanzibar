@@ -8,15 +8,32 @@ SpiceDB is Authzed Open source implementation of Zanzibar.
 
 The following instructions uses [Authzed playground](https://play.authzed.com/schema)
 
-## Sample Authorization
+## Application Context
 
-In this particular example, the main authorization is to make sure only authorized users can do the following:
+The application is a simple CRUD based application allowing users to `CREATE`, `UPDATE`, `DELETE` and `READ` Deals.
+It is focused on verifying which user is authorized to do actions on a deal.
 
-* `portfolio_managers` can `read`, `create` and `update` Portoflios for a specific industry.
-* Industry `relationship_manager` can `update`, `create` and `read` portfolios belonging to its industry.
-* `senior_agents` can **only** `read` and `update` portfolios, but not `create`.
-* `associate_agents` can **only** `read` portfolios
-* Documents belonging to a portfolio follows the same rule as permissions defined in the portfolio.
+## Authorization Rules
+
+The following are the authorization rules:
+
+* Each `user` is categorized into `groups`
+* There are a total of 6 groups namely:
+    * Front office:
+        * `front_office_manager` - Users belonging to this group can `create`, `update`, `delete` and `read` the `core` section of a `deal`.
+        * `front_office_member`- Users belonging to this group can only `read` the `core` section of a `deal`.
+    * Middle office:
+        * `middle_office_manager` - Users belonging to this group can only `create`, `update` and `read` the `supplementary` section of a `deal`.
+        * `middle_office_member` - Users belonging to this group can only `read` the `core` and `supplementary` section of a `deal`.
+    * Back Office:
+        * `back_office_manager` - Users belonging to this group can only `create`, `read` and `update` the `servicing` section of a `deal`.  These users can also update the `servicing` section of the `deal.
+        * `back_office_member` - Users belonging to this group can only `read` the `core` and `servicing` section of a `deal`
+* Any users can read the `core` section of a deal
+* Each `deal` should belong to a `group`.  Users belonging to different `group` should not be able to access `deal`s not in their `group`.
+* Each `deal` has 3 main sections, namely:
+    * `core` section
+    * `supplementary` section
+    * `servicing` section
 
 
 ## Schema definition
@@ -24,237 +41,65 @@ In this particular example, the main authorization is to make sure only authoriz
 ```
 definition user {}
 
-definition industry {
-    relation relationship_manager: user
-}
-/**
- * portfolio resource.
- */
-definition portfolio {
-    relation portfolio_manager: user
-    relation senior_agent: user
-    relation associate_agent: user
 
-    relation industry: industry
 
-    permission update = portfolio_manager + industry->relationship_manager + senior_agent
-    permission create = portfolio_manager + industry->relationship_manager
-    permission read = portfolio_manager + associate_agent + industry->relationship_manager
-}
-
-/**
- * document is a sub resource of portfolio
- */
-
-definition document {
-    relation parent: portfolio
-
-    permission create = parent->create
-    permission update = parent->update
-    permission read = parent->update + parent->read + parent->create
+definition group {
+    relation front_office_manager: user
+    relation front_office_member: user
+    relation middle_office_manager: user
+    relation middle_office_member: user
+    relation back_office_manager: user
+    relation back_office_member: user
 
 }
 
-```
-## Sample relationships
-
-### Industry relationships
-* User `topdawg` is the _Oil and Gas_ Industry relationship manager
-* User `madame_oracle` is the _Financial_industry_ relationship manager
-
-Let us create the relationship
-
-```
-// industries
-industry:oil_and_gas#relationship_manager@user:topdawg#...
-industry:financial#relationship_manager@user:madame_oracle#...
-```
-
-Let us link the `portfolio`s to the `industry`
+definition deal {
+    relation group: group
+    
+    permission update_core_section =  group->front_office_manager
+    permission update_supplementary_section =  group->middle_office_manager
+    permission update_servicing_section = group->back_office_manager
+    permission read_core_section = group->front_office_member + group->middle_office_member + group->back_office_member + update_core_section + update_supplementary_section + update_servicing_section
+    permission read_supplementary_section = group->middle_office_manager + group->middle_office_member
+    permission read_servicing_section = group->back_office_manager + group->back_office_member
+}
 
 ```
-portfolio:shell#industry@industry:oil_and_gas#...
-portfolio:sgx#industry@industry:financial#...
-```
+## Sample Groups and Users
 
-Retrieve all the expected permissions, by specifying these:
+There are 2 groups:
+* `france`
+* `singapore`
 
-```
-portfolio:sgx#create: 
-portfolio:sgx#read:
-portfolio:sgx#update:
-portfolio:shell#create:
-portfolio:shell#read:
-portfolio:shell#update:
+* james is a `front_office_manager` of the group `singapore`
+* mofarrell is a `middle_office_manager` of the group `singapore`
+* boban is a `back_office_manager` of the group `singapore`
 
-```
+* loki is a `front_office_manager` of the group `france`
+* magneto is a `middle_office_manager` of the group `france`
+* logan is a `back_office_manager` of the group `france`
 
-Then "Regenerate", it will result to these `Portfolio` permissions
+### Using `zed` command to create the group relationships
 
 ```
-portfolio:sgx#create:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#read:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#update:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:shell#create:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-portfolio:shell#read:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-portfolio:shell#update:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
+zed --insecure --log-level=trace relationship create group:singapore front_office_manager user:james
+zed --insecure --log-level=trace relationship create group:singapore middle_office_manager user:mofarrell
+zed --insecure --log-level=trace relationship create group:singapore back_office_manager user:boban
+
+zed --insecure --log-level=trace relationship create group:france front_office_manager user:loki
+zed --insecure --log-level=trace relationship create group:france middle_office_manager user:magneto
+zed --insecure --log-level=trace relationship create group:france back_office_manager user:logan
 
 ```
 
-#### Asserting permissions
+Sample to delete relationships using `zed`
 
-Let us check if `topdawg` have `update` permission to the Portfolio `shell`
-On the tab Assertions.
-
-```
-assertTrue:
-- "portfolio:shell#update@user:topdawg#..."
+``` shell
+zed --insecure --log-level=trace relationship delete group:singapore front_office_manager user:loki
+zed --insecure --log-level=trace relationship delete group:singapore middle_office_manager user:magneto
+zed --insecure --log-level=trace relationship delete group:singapore back_office_manager user:logan
 ```
 
-Let us check if `madame_oracle` has `create` permission to the `sgx` Portfolio
-
-```
-assertTrue:
-- "portfolio:shell#update@user:topdawg#..."
-- "portfolio:sgx#create@user:madame_oracle#..."
-```
-Both of these should yield to True.
-
-How about not having permissions.  Let us try that by making sure that `topdawg` do not have permission on the `sgx` portfolio and vice versa for `madame_oracle`
-
-```
-assertFalse:
-- "portfolio:sgx#create@user:topdawg#..."
-- "portfolio:sgx#update@user:topdawg#..."
-- "portfolio:sgx#read@user:topdawg#..."
-- "portfolio:shell#create@user:madame_oracle#..."
-- "portfolio:shell#update@user:madame_oracle#..."
-- "portfolio:shell#read@user:madame_oracle#..."
-```
-
-### Portfolio documents
-
-Let us try to check if the documents linked to the portfolios are accessible to `topdawg` and `madame_oracle`.
-
-Create these additional relationships
-
-```
-// document relationship with portfolio
-document:findoc#parent@portfolio:sgx#...
-document:envdoc#parent@portfolio:shell#...
-```
-
-Go to the expected permissions and add the following then generate.
-
-```
-document:findoc#create: 
-document:findoc#update: 
-document:findoc#read: 
-document:envdoc#create: 
-document:envdoc#update: 
-document:envdoc#read: 
-```
-
-You should now see `topdawg` and `madame_oracle` to have permissions to the documents, due to its transitive relationship permissions defined in the schema above.
-
-```
-document:envdoc#create:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-document:envdoc#read:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-document:envdoc#update:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-document:findoc#create:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-document:findoc#read:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-document:findoc#update:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#create:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#read:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#update:
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:shell#create:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-portfolio:shell#read:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-portfolio:shell#update:
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-```
-
-## Add portfolio users
-
-Let us add the following:
-* User `agentsmith` is the `portfolio_manager` for `shell` portfolio.
-* User `james` is the `portfolio_manager` for the `sgx` portfolio.
-
-```
-portfolio:shell#portfolio_manager@user:agentsmith#...
-portfolio:sgx#portfolio_manager@user:james#...
-```
-
-Followed by Regenerate in the expected permissions tab.
-
-This will be the resulting relationships.
-
-```
-document:envdoc#create:
-- '[user:agentsmith] is <portfolio:shell#portfolio_manager>'
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-document:envdoc#read:
-- '[user:agentsmith] is <portfolio:shell#portfolio_manager>'
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-document:envdoc#update:
-- '[user:agentsmith] is <portfolio:shell#portfolio_manager>'
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-document:findoc#create:
-- '[user:james] is <portfolio:sgx#portfolio_manager>'
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-document:findoc#read:
-- '[user:james] is <portfolio:sgx#portfolio_manager>'
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-document:findoc#update:
-- '[user:james] is <portfolio:sgx#portfolio_manager>'
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#create:
-- '[user:james] is <portfolio:sgx#portfolio_manager>'
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#read:
-- '[user:james] is <portfolio:sgx#portfolio_manager>'
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:sgx#update:
-- '[user:james] is <portfolio:sgx#portfolio_manager>'
-- '[user:madame_oracle] is <industry:financial#relationship_manager>'
-portfolio:shell#create:
-- '[user:agentsmith] is <portfolio:shell#portfolio_manager>'
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-portfolio:shell#read:
-- '[user:agentsmith] is <portfolio:shell#portfolio_manager>'
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-portfolio:shell#update:
-- '[user:agentsmith] is <portfolio:shell#portfolio_manager>'
-- '[user:topdawg] is <industry:oil_and_gas#relationship_manager>'
-```
-
-### Add associate agents to portfolios
-
-Let us assign User `minime` as `associate_agent` of `sgx` portfolio and verify that he has no permission to create portfolio
-
-In the Assertions tab add this to the `assertFalse`
-
-```
-- "portfolio:sgx#create@user:minime#..."
-```
-
-Click Run
 
 # Run the spicedb server
 
@@ -281,7 +126,7 @@ Follow docs from [here](https://github.com/authzed/spicedb#installing-spicedb)
 spicedb serve --datastore-engine postgres --datastore-conn-uri="postgres://amazinguser:perfectpassword@localhost:31747/awesomedb?sslmode=disable" --grpc-preshared-key "supersecretthingy"
 ```
 
-Or with Postgres
+Run spiceDB schema migration with PostgreSQL.
 
 ```shell
 
@@ -300,6 +145,12 @@ zed import --insecure --endpoint=localhost:50051 --token=supersecretthingy --rel
 
 ```
 zed import --insecure --endpoint=localhost:50051 --token=supersecretthingy --schema=false file:///home/thor/workspace/rebac-samples/files/relationships.yaml
+```
+
+### Write schema
+
+``` shell
+zed --insecure --log-level=trace schema write hack/schema.zed
 ```
 
 ### Get relationships
