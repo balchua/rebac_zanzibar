@@ -1,0 +1,419 @@
+schema: >-
+  definition user {}
+
+
+  /* Every thirdparty role belongs to an organization */
+
+  definition organization {
+  	relation member: user
+  }
+
+
+  definition thirdparty_role {
+  	relation front_office_manager: user
+  	relation front_office_originator: user
+  	relation middle_office_manager: user
+  	relation middle_office_validator: user
+  	relation back_office_manager: user
+  	relation back_office_validator: user
+  	relation org: organization
+
+  	// check if the subject is a member of the org and a front_office_originator
+  	permission create_deal = org->member & front_office_originator
+  }
+
+
+  // resource id format: <deal_id>_<state>
+
+  definition deal {
+  	relation thirdparty: thirdparty_role
+  	relation org: organization
+  	permission can_role_review = thirdparty->front_office_manager
+  	permission can_role_validate = thirdparty->middle_office_manager
+  	permission can_role_process = thirdparty->back_office_manager
+  	permission can_role_view = org->member & thirdparty->back_office_manager + thirdparty->back_office_validator + thirdparty->middle_office_manager + thirdparty->middle_office_validator + thirdparty->front_office_manager + thirdparty->front_office_originator
+  }
+
+
+  // resource id format: <deal_id>_<state>_<field_name>
+
+  definition deal_field {
+  	relation reader: thirdparty_role#front_office_manager | thirdparty_role#front_office_originator | thirdparty_role#middle_office_manager | thirdparty_role#middle_office_validator | thirdparty_role#back_office_manager | thirdparty_role#back_office_validator
+  	relation writer: thirdparty_role#front_office_manager | thirdparty_role#front_office_originator | thirdparty_role#middle_office_manager | thirdparty_role#middle_office_validator | thirdparty_role#back_office_manager | thirdparty_role#back_office_validator
+  	relation org: organization
+  	permission write = org->member & writer 
+  	permission read = org->member & reader + write
+  }
+relationships: >-
+  
+  // On system setup
+
+  // Add all thirdparty_roles available to all organizations
+
+  // Add agent thirdparty role to singapore organization
+
+  thirdparty_role:agent#org@organization:singapore#...
+
+  thirdparty_role:auditor#org@organization:singapore#...
+
+  thirdparty_role:loan_officer#org@organization:singapore#...
+
+
+  thirdparty_role:agent#org@organization:france#...
+
+  thirdparty_role:auditor#org@organization:france#...
+
+  thirdparty_role:loan_officer#org@organization:france#...
+
+
+  // ################ adding users to the system ######################## //
+
+
+  // Agents
+
+  // On authorizing james
+
+  // First add james to be a member of the singapore organization
+
+  organization:singapore#member@user:james#...
+
+  // Make james belong to agent thirdparty_role agent with operational role front_office_originator
+
+  thirdparty_role:agent#front_office_originator@user:james#...
+
+
+  // On authorizing nicky
+
+  // First add james to be a member of the singapore organization
+
+  organization:singapore#member@user:nicky#...
+
+  // Make james belong to agent thirdparty_role agent with operational role front_office_originator
+
+  thirdparty_role:agent#front_office_manager@user:nicky#...
+
+
+
+  // Auditor
+
+  // On authorizing john
+
+  // First add john to be a member of the singapore organization
+
+  organization:singapore#member@user:john#...
+
+  // Make john belong to auditor thirdparty role with operational role middle_office_manager
+
+  thirdparty_role:auditor#middle_office_manager@user:john#...
+
+
+  // Auditor
+
+  // On authorizing loki
+
+  // First add john to be a member of the singapore organization
+
+  organization:singapore#member@user:loki#...
+
+  // Make john belong to auditor thirdparty role with operational role middle_office_manager
+
+  thirdparty_role:auditor#middle_office_validator@user:loki#...
+
+
+
+  // Loan officer
+
+  // On authorizing logan
+
+  // First add john to be a member of the singapore organization
+
+  organization:singapore#member@user:logan#...
+
+  // Make john belong to auditor thirdparty role with operational role middle_office_manager
+
+  thirdparty_role:loan_officer#back_office_validator@user:logan#...
+
+
+  // Loan officer
+
+  // On authorizing chris
+
+  // First add john to be a member of the singapore organization
+
+  organization:singapore#member@user:chris#...
+
+  // Make john belong to auditor thirdparty role with operational role middle_office_manager
+
+  thirdparty_role:loan_officer#back_office_manager@user:chris#...
+
+
+  // Auditor
+
+  // On authorizing philippe
+
+  // First add john to be a member of the singapore organization
+
+  organization:france#member@user:philippe#...
+
+  // Make john belong to auditor thirdparty role with operational role middle_office_manager
+
+  thirdparty_role:auditor#middle_office_manager@user:philippe#...
+
+
+
+  // ################################# creating or updating deals ###########//
+
+  // On creating deal, assign the deal to an organization
+
+  deal:1_created#org@organization:singapore#...
+
+  // assign the deal to a thirdparty role, the deal_id must be in this format <id>_<state>
+
+  deal:1_created#thirdparty@thirdparty_role:agent#...
+
+
+  // Assign the deal fields to the organization
+
+  deal_field:1_created_field1#org@organization:singapore#...
+
+  deal_field:1_created_field2#org@organization:singapore#...
+
+  deal_field:1_created_field3#org@organization:singapore#...
+
+  deal_field:1_created_field4#org@organization:singapore#...
+
+  deal_field:1_created_field5#org@organization:singapore#...
+
+
+
+  deal_field:1_created_field1#writer@thirdparty_role:agent#front_office_originator
+
+  deal_field:1_created_field1#writer@thirdparty_role:agent#front_office_manager
+
+  deal_field:1_created_field2#writer@thirdparty_role:agent#front_office_originator
+
+  deal_field:1_created_field2#writer@thirdparty_role:agent#front_office_manager
+
+
+
+  // When updating the deal from created to reviewed
+
+  deal:1_reviewed#org@organization:singapore#...
+
+  deal:1_reviewed#thirdparty@thirdparty_role:auditor#...
+
+
+  // Assign the deal fields to the organization
+
+  deal_field:1_reviewed_field1#org@organization:singapore#...
+
+  deal_field:1_reviewed_field2#org@organization:singapore#...
+
+  deal_field:1_reviewed_field3#org@organization:singapore#...
+
+  deal_field:1_reviewed_field4#org@organization:singapore#...
+
+  deal_field:1_reviewed_field5#org@organization:singapore#...
+
+
+  // set field1 to be readable by manager and validator
+
+  deal_field:1_reviewed_field1#reader@thirdparty_role:auditor#middle_office_manager
+
+  deal_field:1_reviewed_field1#reader@thirdparty_role:auditor#middle_office_validator
+
+  deal_field:1_reviewed_field1#reader@thirdparty_role:agent#front_office_manager
+
+  deal_field:1_reviewed_field1#reader@thirdparty_role:agent#front_office_originator
+
+
+  // set field2 to be readable by manager and validator
+
+  deal_field:1_reviewed_field2#reader@thirdparty_role:auditor#middle_office_manager
+
+  deal_field:1_reviewed_field2#reader@thirdparty_role:auditor#middle_office_validator
+
+  deal_field:1_reviewed_field2#reader@thirdparty_role:agent#front_office_manager
+
+  deal_field:1_reviewed_field2#reader@thirdparty_role:agent#front_office_originator
+
+
+  // set field3 to be readable by manager and validator
+
+  deal_field:1_reviewed_field3#reader@thirdparty_role:auditor#middle_office_validator
+
+  deal_field:1_reviewed_field3#reader@thirdparty_role:auditor#middle_office_manager
+
+
+  // set field3 to be writable by manager
+
+  deal_field:1_reviewed_field3#writer@thirdparty_role:auditor#middle_office_manager
+
+
+
+  // When updating the deal from created to validated
+
+  deal:1_validated#org@organization:singapore#...
+
+  deal:1_validated#thirdparty@thirdparty_role:loan_officer#...
+
+  // Assign the deal fields to thirdparty role
+
+  deal_field:1_validated_field1#org@organization:singapore#...
+
+  deal_field:1_validated_field2#org@organization:singapore#...
+
+  deal_field:1_validated_field3#org@organization:singapore#...
+
+  deal_field:1_validated_field4#org@organization:singapore#...
+
+  deal_field:1_validated_field5#org@organization:singapore#...
+
+
+  // set field2 to be readable by manager and validator
+
+  deal_field:1_validated_field1#reader@thirdparty_role:loan_officer#back_office_manager
+
+  deal_field:1_validated_field1#reader@thirdparty_role:loan_officer#back_office_validator
+
+  deal_field:1_validated_field1#reader@thirdparty_role:agent#front_office_manager
+
+  deal_field:1_validated_field1#reader@thirdparty_role:agent#front_office_originator
+
+  deal_field:1_validated_field1#reader@thirdparty_role:auditor#middle_office_manager
+
+  deal_field:1_validated_field1#reader@thirdparty_role:auditor#middle_office_validator
+
+
+  // set field2 to be readable by manager and validator
+
+  deal_field:1_validated_field2#reader@thirdparty_role:loan_officer#back_office_manager
+
+  deal_field:1_validated_field2#reader@thirdparty_role:loan_officer#back_office_validator
+
+  deal_field:1_validated_field2#reader@thirdparty_role:agent#front_office_manager
+
+  deal_field:1_validated_field2#reader@thirdparty_role:agent#front_office_originator
+
+  deal_field:1_validated_field2#reader@thirdparty_role:auditor#middle_office_manager
+
+  deal_field:1_validated_field2#reader@thirdparty_role:auditor#middle_office_validator
+
+
+  // set field3 to be readable by manager and validator
+
+  deal_field:1_validated_field3#reader@thirdparty_role:loan_officer#back_office_validator
+
+  deal_field:1_validated_field3#reader@thirdparty_role:loan_officer#back_office_manager
+
+
+  // set field4 to be writable by manager and validator
+
+  deal_field:1_validated_field4#writer@thirdparty_role:loan_officer#back_office_validator
+
+  deal_field:1_validated_field4#writer@thirdparty_role:loan_officer#back_office_manager
+
+
+  // set field5 to be writable by manager and validator
+
+  deal_field:1_validated_field5#writer@thirdparty_role:loan_officer#back_office_validator
+
+  deal_field:1_validated_field5#writer@thirdparty_role:loan_officer#back_office_manager
+assertions:
+  assertTrue:
+    - deal_field:1_reviewed_field1#read@user:john
+validation:
+  deal:1_created#can_role_view:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal:1_reviewed#can_role_view:
+    - "[user:john] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_manager>"
+    - "[user:loki] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_validator>"
+  deal:1_validated#can_role_view:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+  deal_field:1_created_field1#read:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_created_field1#write:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_created_field2#read:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_created_field2#write:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_created_field3#read: []
+  deal_field:1_created_field3#write: []
+  deal_field:1_created_field4#read: []
+  deal_field:1_created_field4#write: []
+  deal_field:1_created_field5#read: []
+  deal_field:1_created_field5#write: []
+  deal_field:1_reviewed_field1#read:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:john] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_manager>"
+    - "[user:loki] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_validator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_reviewed_field1#write: []
+  deal_field:1_reviewed_field2#read:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:john] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_manager>"
+    - "[user:loki] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_validator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_reviewed_field2#write: []
+  deal_field:1_reviewed_field3#read:
+    - "[user:john] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_manager>"
+    - "[user:loki] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_validator>"
+  deal_field:1_reviewed_field3#write:
+    - "[user:john] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_manager>"
+  deal_field:1_reviewed_field4#read: []
+  deal_field:1_reviewed_field4#write: []
+  deal_field:1_reviewed_field5#read: []
+  deal_field:1_reviewed_field5#write: []
+  deal_field:1_validated_field1#read:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:john] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+    - "[user:loki] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_validator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_validated_field1#write: []
+  deal_field:1_validated_field2#read:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+    - "[user:john] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+    - "[user:loki] is <organization:singapore#member>/<thirdparty_role:auditor#middle_office_validator>"
+    - "[user:nicky] is <organization:singapore#member>/<thirdparty_role:agent#front_office_manager>"
+  deal_field:1_validated_field2#write: []
+  deal_field:1_validated_field3#read:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+  deal_field:1_validated_field3#write: []
+  deal_field:1_validated_field4#read:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+  deal_field:1_validated_field4#write:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+  deal_field:1_validated_field5#read:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+  deal_field:1_validated_field5#write:
+    - "[user:chris] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_manager>"
+    - "[user:logan] is <organization:singapore#member>/<thirdparty_role:loan_officer#back_office_validator>"
+  organization:singapore#member:
+    - "[user:chris] is <organization:singapore#member>"
+    - "[user:james] is <organization:singapore#member>"
+    - "[user:john] is <organization:singapore#member>"
+    - "[user:logan] is <organization:singapore#member>"
+    - "[user:loki] is <organization:singapore#member>"
+    - "[user:nicky] is <organization:singapore#member>"
+  thirdparty_role:agent#create_deal:
+    - "[user:james] is <organization:singapore#member>/<thirdparty_role:agent#front_office_originator>"
+  thirdparty_role:agent#front_office_originator:
+    - "[user:james] is <thirdparty_role:agent#front_office_originator>"
+  thirdparty_role:agent#org:
+    - "[organization:france] is <thirdparty_role:agent#org>"
+    - "[organization:singapore] is <thirdparty_role:agent#org>"
