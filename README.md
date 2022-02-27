@@ -80,6 +80,9 @@ Under the state `created`, `agents` with operational role `front_office_manager`
 When the deal is in `reviewed` state, only `auditors` with operational_role `middle_office_manager` can set the state to `reviewed`
 When the deal is in `reviewed` state, any `auditors` can read the deal
 
+When the deal is in `validated` state, only `loan_officer` with operational_role `back_office_manager` and `back_office_validator` can view
+When the deal is in `processed` state, all users can view.
+
 ### Deal fields access rights
 
 `field1` - writable
@@ -103,6 +106,7 @@ When the deal is in `reviewed` state, any `auditors` can read the deal
 
 `field3` - readable
 * When the deal is in `reviewed` state and in `auditor` thirdparty role with operational role `middle_office_manager` or `middle_office_validator`
+* When the deal is in `validated` state and in `loan_officer` thirdparty role with operational role `back_office_manager` or `back_office_validator`
 
 `field4` - writable
 * When the deal is in `validated` state and in `loan_officer` thirdparty role with operational role `back_office_manager` or `back_office_validator` 

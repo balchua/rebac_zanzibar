@@ -47,6 +47,20 @@ spicedb serve --datastore-engine postgres --datastore-conn-uri="postgres://amazi
 
 Go to [zed github](https://github.com/authzed/zed) and download `spiceDB` binary from the [releases page](https://github.com/authzed/zed/releases)
 
+## Set zed context
+
+Below is a sample:
+
+``` shell
+zed context local localhost:50051 supersecretthingy
+```
+
+## Write the scehma
+
+``` shell
+zed --insecure schema write hack/lsc-schema.zed
+```
+
 ## Write authorization schema into spiceDB
 
 ``` shell

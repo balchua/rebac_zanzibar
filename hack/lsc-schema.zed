@@ -1,0 +1,45 @@
+  definition user {}
+
+
+  /* Every thirdparty role belongs to an organization */
+
+  definition organization {
+  	relation member: user
+  }
+
+
+  definition thirdparty_role {
+  	relation front_office_manager: user
+  	relation front_office_originator: user
+  	relation middle_office_manager: user
+  	relation middle_office_validator: user
+  	relation back_office_manager: user
+  	relation back_office_validator: user
+  	relation org: organization
+
+  	// check if the subject is a member of the org and a front_office_originator
+  	permission create_deal = org->member & front_office_originator
+  }
+
+
+  // resource id format: <deal_id>_<state>
+
+  definition deal {
+  	relation thirdparty: thirdparty_role
+  	relation org: organization
+  	permission can_role_review = thirdparty->front_office_manager
+  	permission can_role_validate = thirdparty->middle_office_manager
+  	permission can_role_process = thirdparty->back_office_manager
+  	permission can_role_view = org->member & thirdparty->back_office_manager + thirdparty->back_office_validator + thirdparty->middle_office_manager + thirdparty->middle_office_validator + thirdparty->front_office_manager + thirdparty->front_office_originator
+  }
+
+
+  // resource id format: <deal_id>_<state>_<field_name>
+
+  definition deal_field {
+  	relation reader: thirdparty_role#front_office_manager | thirdparty_role#front_office_originator | thirdparty_role#middle_office_manager | thirdparty_role#middle_office_validator | thirdparty_role#back_office_manager | thirdparty_role#back_office_validator
+  	relation writer: thirdparty_role#front_office_manager | thirdparty_role#front_office_originator | thirdparty_role#middle_office_manager | thirdparty_role#middle_office_validator | thirdparty_role#back_office_manager | thirdparty_role#back_office_validator
+  	relation org: organization
+  	permission write = org->member & writer 
+  	permission read = org->member & reader + write
+  }
