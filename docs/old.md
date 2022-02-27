@@ -247,3 +247,25 @@ go run main.go
 2022/01/31 13:35:52 read permission is true for user minime on document findoc
 2022/01/31 13:35:52 update permission is false for user minime on document findoc
 ```
+
+
+### Using `zed` command to create the group relationships
+
+```
+zed --insecure --log-level=trace relationship create group:singapore front_office_manager user:james
+zed --insecure --log-level=trace relationship create group:singapore middle_office_manager user:mofarrell
+zed --insecure --log-level=trace relationship create group:singapore back_office_manager user:boban
+
+zed --insecure --log-level=trace relationship create group:france front_office_manager user:loki
+zed --insecure --log-level=trace relationship create group:france middle_office_manager user:magneto
+zed --insecure --log-level=trace relationship create group:france back_office_manager user:logan
+
+```
+
+Sample to delete relationships using `zed`
+
+``` shell
+zed --insecure --log-level=trace relationship delete group:singapore front_office_manager user:loki
+zed --insecure --log-level=trace relationship delete group:singapore middle_office_manager user:magneto
+zed --insecure --log-level=trace relationship delete group:singapore back_office_manager user:logan
+```

@@ -36,8 +36,8 @@ then
     zed --insecure relationship create deal:"$DEAL"_validated org organization:$ORG 
 
     # assign the deal to a thirdparty role, the deal_id must be in this format <id>_<state>
-    echo "zed --insecure relationship create deal:"$DEAL"_validated thirdparty thirdparty_role:validated"
-    zed --insecure relationship create deal:"$DEAL"_validated thirdparty thirdparty_role:validated 
+    echo "zed --insecure relationship create deal:"$DEAL"_validated thirdparty thirdparty_role:loan_officer"
+    zed --insecure relationship create deal:"$DEAL"_validated thirdparty thirdparty_role:loan_officer 
 fi
 
 if [ "$NEXT_STATE" == "processed" ]
@@ -51,5 +51,7 @@ then
 
     # assign the deal to a thirdparty role, the deal_id must be in this format <id>_<state>
     echo "zed --insecure relationship create deal:"$DEAL"_processed thirdparty thirdparty_role:processed"
-    zed --insecure relationship create deal:"$DEAL"_processed thirdparty thirdparty_role:processed 
+    zed --insecure relationship create deal:"$DEAL"_processed thirdparty thirdparty_role:loan_officer 
+    zed --insecure relationship create deal:"$DEAL"_processed thirdparty thirdparty_role:agent
+    zed --insecure relationship create deal:"$DEAL"_processed thirdparty thirdparty_role:auditor
 fi
