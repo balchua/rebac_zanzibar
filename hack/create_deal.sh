@@ -6,7 +6,7 @@ THIRDPARTY_ROLE=$3
 
 if [ "$#" != "3" ]
 then
-  echo "Invalid number of arguments. Usage <userid to add> <organization> <thirdparty role>"
+  echo "Invalid number of arguments. Usage <deal id> <organization> <thirdparty role>"
   exit 1
 fi
 
